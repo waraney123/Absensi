@@ -1,48 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Absensi K3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner HSE</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
-        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; }
-        #status { margin-top: 20px; font-weight: bold; padding: 15px; border-radius: 8px; min-height: 50px; }
-        .msg { background: #e8f0fe; color: #1967d2; }
+        body { font-family: sans-serif; text-align: center; background: #f4f7f6; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; background: #000; }
+        .btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+        #status { margin-top: 15px; padding: 15px; border-radius: 10px; font-weight: bold; min-height: 40px; }
+        .active { background: #d4edda; color: #155724; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Terminal Absensi</h2>
+    <div class="card">
+        <h2>Scanner QR Absensi</h2>
         <div id="reader"></div>
-        <div id="status">Menunggu Scan...</div>
+        <button id="start-btn" class="btn" onclick="start()">AKTIFKAN KAMERA</button>
+        <div id="status">Siap Memindai...</div>
     </div>
-
     <script>
-        // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE SCRIPT ANDA
-        const api_url = "https://script.google.com/macros/s/AKfycbzMk-PL43AWbV7CFG5iqGCFHeWsZNS5U64h6HijdPjFJPHejZ4sGe9JAn1jDVTZwpifNQ/exec"; 
+        const api_url = "PASTE_URL_WEB_APP_GOOGLE_DISINI"; 
+        let html5QrCode;
 
-        function onScanSuccess(decodedText) {
-            const statusEl = document.getElementById('status');
-            statusEl.innerHTML = "Memproses ID: " + decodedText;
-            statusEl.className = "msg";
+        function start() {
+            document.getElementById('start-btn').style.display = 'none';
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan);
+        }
 
-            // Mengirim data ke Google Sheets menggunakan JSONP (untuk menghindari CORS)
+        function onScan(id) {
+            html5QrCode.pause(true);
+            document.getElementById('status').innerHTML = "Memproses ID: " + id;
+            document.getElementById('status').className = "active";
+            
             const script = document.createElement('script');
-            script.src = api_url + "?id=" + decodedText + "&callback=handleResponse";
+            script.src = api_url + "?id=" + encodeURIComponent(id) + "&callback=done";
             document.body.appendChild(script);
         }
 
-        // Fungsi untuk menerima balasan dari Google
-        window.handleResponse = function(response) {
-            document.getElementById('status').innerHTML = response;
-            // Scan ulang otomatis setelah 3 detik
-            setTimeout(() => { document.getElementById('status').innerHTML = "Siap Memindai..."; }, 3000);
+        window.done = function(msg) {
+            document.getElementById('status').innerHTML = msg;
+            setTimeout(() => { 
+                document.getElementById('status').innerHTML = "Siap Memindai..."; 
+                document.getElementById('status').className = "";
+                html5QrCode.resume(); 
+            }, 3000);
         };
-
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
     </script>
 </body>
 </html>
