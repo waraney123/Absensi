@@ -1,52 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner HSE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Keamanan & Absensi</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f7f6; margin: 0; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        #reader { width: 100%; border-radius: 15px; overflow: hidden; background: #000; }
-        .btn { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
-        #status { margin-top: 15px; padding: 15px; border-radius: 10px; font-weight: bold; min-height: 40px; }
-        .active { background: #d4edda; color: #155724; }
+        :root { --primary: #1a73e8; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        h2 { color: #3c4043; margin-bottom: 5px; font-size: 22px; }
+        p { color: #70757a; font-size: 14px; margin-bottom: 25px; }
+        #reader { width: 100%; border-radius: 16px; overflow: hidden; border: none !important; background: #000; }
+        #status-box { margin-top: 25px; padding: 18px; border-radius: 14px; font-weight: 600; font-size: 15px; min-height: 20px; transition: all 0.3s ease; border: 1px solid #e0e0e0; }
+        .waiting { background: #fdf4e3; color: #b06000; border-color: #ffe0b2; }
+        .success { background: #e6f4ea; color: #137333; border-color: #ceead6; }
+        .error { background: #fce8e6; color: #c5221f; border-color: #fad2cf; }
+        .btn-start { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Scanner QR Absensi</h2>
+    <div class="container">
+        <h2>Terminal Pintu Masuk</h2>
+        <p>Silakan pindai kartu Karyawan atau Visitor</p>
+        
         <div id="reader"></div>
-        <button id="start-btn" class="btn" onclick="start()">AKTIFKAN KAMERA</button>
-        <div id="status">Siap Memindai...</div>
+        <button id="start-btn" class="btn-start" onclick="initScanner()">AKTIFKAN SCANNER</button>
+        
+        <div id="status-box" id="status-text">Siap melayani...</div>
     </div>
+
     <script>
-        const api_url = "https://script.google.com/macros/s/AKfycbzMk-PL43AWbV7CFG5iqGCFHeWsZNS5U64h6HijdPjFJPHejZ4sGe9JAn1jDVTZwpifNQ/exec"; 
+        const script_url = "PASTE_URL_WEB_APP_ANDA"; 
         let html5QrCode;
 
-        function start() {
+        function initScanner() {
             document.getElementById('start-btn').style.display = 'none';
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan);
         }
 
-        function onScan(id) {
+        function onScan(decodedText) {
             html5QrCode.pause(true);
-            document.getElementById('status').innerHTML = "Memproses ID: " + id;
-            document.getElementById('status').className = "active";
-            
+            const box = document.getElementById('status-box');
+            box.innerHTML = "Memverifikasi data...";
+            box.className = "waiting";
+
             const script = document.createElement('script');
-            script.src = api_url + "?id=" + encodeURIComponent(id) + "&callback=done";
+            script.src = script_url + "?id=" + encodeURIComponent(decodedText) + "&callback=onResult";
             document.body.appendChild(script);
         }
 
-        window.done = function(msg) {
-            document.getElementById('status').innerHTML = msg;
-            setTimeout(() => { 
-                document.getElementById('status').innerHTML = "Siap Memindai..."; 
-                document.getElementById('status').className = "";
-                html5QrCode.resume(); 
-            }, 3000);
+        window.onResult = function(msg) {
+            const box = document.getElementById('status-box');
+            box.innerHTML = msg;
+            box.className = msg.includes("Berhasil") || msg.includes("Selamat") ? "success" : "error";
+
+            setTimeout(() => {
+                box.innerHTML = "Siap melayani...";
+                box.className = "";
+                html5QrCode.resume();
+            }, 3500);
         };
     </script>
 </body>
