@@ -1,65 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Keamanan & Absensi</title>
+    <title>Terminal Absensi Pro</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #1a73e8; --bg: #f8f9fa; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
-        h2 { color: #3c4043; margin-bottom: 5px; font-size: 22px; }
-        p { color: #70757a; font-size: 14px; margin-bottom: 25px; }
-        #reader { width: 100%; border-radius: 16px; overflow: hidden; border: none !important; background: #000; }
-        #status-box { margin-top: 25px; padding: 18px; border-radius: 14px; font-weight: 600; font-size: 15px; min-height: 20px; transition: all 0.3s ease; border: 1px solid #e0e0e0; }
-        .waiting { background: #fdf4e3; color: #b06000; border-color: #ffe0b2; }
-        .success { background: #e6f4ea; color: #137333; border-color: #ceead6; }
-        .error { background: #fce8e6; color: #c5221f; border-color: #fad2cf; }
-        .btn-start { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+        :root { --primary: #0052cc; --success: #36b37e; --error: #ff5630; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f5f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; width: 90%; max-width: 400px; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+        #reader { width: 100%; border-radius: 1rem; overflow: hidden; background: #000; }
+        #status { margin-top: 1.5rem; padding: 1rem; border-radius: 0.8rem; font-weight: 600; min-height: 20px; transition: 0.3s; border: 1px solid #dfe1e6; }
+        .btn { width: 100%; padding: 1rem; background: var(--primary); color: white; border: none; border-radius: 0.8rem; font-weight: bold; cursor: pointer; margin-bottom: 1rem; font-size: 1rem; }
+        .success { background: #e3fcef; color: var(--success); border-color: var(--success); }
+        .error { background: #ffebe6; color: var(--error); border-color: var(--error); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Terminal Pintu Masuk</h2>
-        <p>Silakan pindai kartu Karyawan atau Visitor</p>
-        
+    <div class="card">
+        <h2 style="margin-top:0">Terminal Scan</h2>
         <div id="reader"></div>
-        <button id="start-btn" class="btn-start" onclick="initScanner()">AKTIFKAN SCANNER</button>
-        
-        <div id="status-box" id="status-text">Siap melayani...</div>
+        <button id="start-btn" class="btn" onclick="startScanner()">AKTIFKAN KAMERA</button>
+        <div id="status">Siap memindai...</div>
     </div>
 
     <script>
-        const script_url = "https://script.google.com/macros/s/AKfycbzMk-PL43AWbV7CFG5iqGCFHeWsZNS5U64h6HijdPjFJPHejZ4sGe9JAn1jDVTZwpifNQ/exec"; 
-        let html5QrCode;
+        const API_URL = "URL_WEB_APP_ANDA"; // GANTI DENGAN URL DEPLOY ANDA
+        let scanner;
 
-        function initScanner() {
+        function startScanner() {
             document.getElementById('start-btn').style.display = 'none';
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan);
+            scanner = new Html5Qrcode("reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScan);
         }
 
         function onScan(decodedText) {
-            html5QrCode.pause(true);
-            const box = document.getElementById('status-box');
-            box.innerHTML = "Memverifikasi data...";
-            box.className = "waiting";
+            scanner.pause(true);
+            const statusBox = document.getElementById('status');
+            statusBox.innerHTML = "Memverifikasi ID: " + decodedText;
+            statusBox.className = "";
 
             const script = document.createElement('script');
-            script.src = script_url + "?id=" + encodeURIComponent(decodedText) + "&callback=onResult";
+            script.src = `${API_URL}?id=${encodeURIComponent(decodedText)}&callback=onResult`;
             document.body.appendChild(script);
         }
 
-        window.onResult = function(msg) {
-            const box = document.getElementById('status-box');
-            box.innerHTML = msg;
-            box.className = msg.includes("Berhasil") || msg.includes("Selamat") ? "success" : "error";
+        window.onResult = function(response) {
+            const statusBox = document.getElementById('status');
+            statusBox.innerHTML = response;
+            statusBox.className = response.includes("✅") ? "success" : "error";
 
             setTimeout(() => {
-                box.innerHTML = "Siap melayani...";
-                box.className = "";
-                html5QrCode.resume();
-            }, 3500);
+                statusBox.innerHTML = "Siap memindai...";
+                statusBox.className = "";
+                scanner.resume();
+            }, 3000);
         };
     </script>
 </body>
